@@ -4,286 +4,123 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import ChatWindow from './src/ChatWindow';
 
 beforeAll(() => {
-  Element.prototype.scrollIntoView = jest.fn();
+  // Mocking scrollIntoView method
+  HTMLElement.prototype.scrollIntoView = jest.fn();
 });
 
-// Mock fetch API
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve([
-      { id: 1, sender_id: 1, message: 'Hello', timestamp: '2023-01-01T00:00:00Z', sender_name: 'testuser' },
-      { id: 2, sender_id: 2, message: 'Hi there', timestamp: '2023-01-01T00:01:00Z', sender_name: 'frienduser' }
-    ]),
-  })
-);
+// Mock global fetch
+global.fetch = jest.fn();
 
-beforeEach(() => {
-  fetch.mockClear();
-});
+const mockUser = { id: 1, username: 'TestUser' };
+const mockFriend = { id: 2, username: 'FriendUser' };
+const mockOnClose = jest.fn();
 
-describe('ChatWindow Component', () => {
-  const mockUser = { id: 1, username: 'testuser' };
-  const mockFriend = { id: 2, username: 'frienduser' };
-  const mockOnClose = jest.fn();
-
+describe('ChatWindow', () => {
   beforeEach(() => {
-    mockOnClose.mockClear();
+    // Clear any previous mock data
+    fetch.mockClear();
   });
 
-  test('renders chat window with header and form', async () => {
-    await act(async () => {
-      render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
+  test('loads messages on mount', async () => {
+    // Mock the fetch call to simulate loading messages
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue([
+        { id: 1, sender_id: 1, message: 'Hello', timestamp: '2025-07-04T10:00:00Z' },
+        { id: 2, sender_id: 2, message: 'Hi', timestamp: '2025-07-04T10:01:00Z' },
+      ]),
     });
-    
-    expect(screen.getByText(`Chat with ${mockFriend.username}`)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Send/i })).toBeInTheDocument();
-    
-    // Wait for messages to load
-    await waitFor(() => {
-      expect(screen.getByText('Hello')).toBeInTheDocument();
-      expect(screen.getByText('Hi there')).toBeInTheDocument();
-    });
+
+    render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
+
+    // Wait for messages to be loaded and displayed
+    await waitFor(() => screen.getByText('Hello'));
+    expect(screen.getByText('Hello')).toBeInTheDocument();
+    expect(screen.getByText('Hi')).toBeInTheDocument();
   });
 
-  test('calls onClose when close button is clicked', async () => {
-    await act(async () => {
-      render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
-    });
-    
-    // Use aria-label instead of the × symbol
-    const closeButton = screen.getByLabelText('Close chat');
-    fireEvent.click(closeButton);
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  test('sends a new message', async () => {
-    // Mock successful message send
-    fetch.mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ 
-          id: 3, 
-          sender_id: 1, 
-          message: 'New message', 
-          timestamp: '2023-01-01T00:02:00Z' 
-        }),
-      })
-    );
-
-    await act(async () => {
-      render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
+  test('sends a message successfully', async () => {
+    // Mock sending the message
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        id: 3,
+        sender_id: 1,
+        receiver_id: 2,
+        message: 'New Message',
+        timestamp: '2025-07-04T10:02:00Z',
+      }),
     });
 
-    // Wait for initial load
-    await waitFor(() => {
-      expect(screen.getByText('Hello')).toBeInTheDocument();
-    });
+    render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
 
     const input = screen.getByPlaceholderText('Type a message...');
-    const sendButton = screen.getByRole('button', { name: /Send/i });
+    const sendButton = screen.getByText('Send');
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'New message' } });
-    });
-    
-    expect(input).toHaveValue('New message');
-    
-    await act(async () => {
-      fireEvent.click(sendButton);
-    });
+    // Simulate typing and sending a message
+    fireEvent.change(input, { target: { value: 'New Message' } });
+    fireEvent.click(sendButton);
 
-    // Wait for the message to be sent and input to be cleared
-    await waitFor(() => {
-      expect(input).toHaveValue('');
-    });
-
-    // Verify fetch was called
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/messages'),
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('New message'),
-      })
-    );
-  });
-});
-
-// Task.test.js - Fixed version
-import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import Task from './src/Task';
-
-// Mock fetch responses
-const mockTasks = [
-  { id: 1, name: 'Task 1', date: '2023-01-01', time: '12:00', priority: 'High', workload: '2hr', completed: false },
-  { id: 2, name: 'Task 2', date: '2023-01-02', time: '14:00', priority: 'Medium', workload: '1hr', completed: true }
-];
-
-const mockSharedTasks = [
-  { id: 3, name: 'Shared Task', date: '2023-01-03', time: '10:00', priority: 'Low', workload: '30min', completed: false, owner_username: 'otheruser' }
-];
-
-const mockFriends = [
-  { id: 1, username: 'friend1' },
-  { id: 2, username: 'friend2' }
-];
-
-describe('Task Component', () => {
-  const mockUser = { id: 1, username: 'testuser' };
-  const mockShowMessage = jest.fn();
-
-  beforeEach(() => {
-    // Clear all mocks
-    mockShowMessage.mockClear();
-    
-    global.fetch = jest.fn((url) => {
-      if (url.includes('/tasks/1') && !url.includes('shared')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockTasks),
-        });
-      }
-      if (url.includes('/tasks/shared/1')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockSharedTasks),
-        });
-      }
-      if (url.includes('/friends/1')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockFriends),
-        });
-      }
-      // For POST, PUT, DELETE requests
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-    });
+    // Check if the new message is displayed
+    await waitFor(() => screen.getByText('New Message'));
+    expect(screen.getByText('New Message')).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  test('does not send a message if input is empty', () => {
+    render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
+
+    const sendButton = screen.getByText('Send');
+
+    // Simulate clicking the send button with empty input
+    fireEvent.click(sendButton);
+
+    // Check that the button is not disabled and no message is sent
+    expect(sendButton).toBeDisabled();
   });
 
-  test('renders task statistics', async () => {
-    await act(async () => {
-      render(<Task user={mockUser} showMessage={mockShowMessage} />);
+  test('scrolls to the bottom when new messages are added', async () => {
+    // Mock the fetch call
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue([
+        { id: 1, sender_id: 1, message: 'Hello', timestamp: '2025-07-04T10:00:00Z' },
+      ]),
     });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Total Tasks')).toBeInTheDocument();
-      // Use getAllByText since there might be multiple elements with "2"
-      const twoElements = screen.getAllByText('3'); // 2 personal + 1 shared = 3 total
-      expect(twoElements.length).toBeGreaterThan(0);
+
+    render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
+
+    const messagesContainer = screen.getByClass('messages-container');
+
+    // Check that the scroll is at the bottom initially
+    expect(messagesContainer.scrollTop).toBeGreaterThan(0);
+
+    // Add a new message
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        id: 2,
+        sender_id: 2,
+        message: 'New Message',
+        timestamp: '2025-07-04T10:02:00Z',
+      }),
     });
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: 'New Message' } });
+    fireEvent.click(screen.getByText('Send'));
+
+    // Check if scroll position is still at the bottom
+    await waitFor(() => screen.getByText('New Message'));
+    expect(messagesContainer.scrollTop).toBeGreaterThan(0);
   });
 
-  test('creates a new task', async () => {
-    await act(async () => {
-      render(<Task user={mockUser} showMessage={mockShowMessage} />);
-    });
-    
-    // Wait for component to load
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Enter task name')).toBeInTheDocument();
-    });
+  test('calls onClose when close button is clicked', () => {
+    render(<ChatWindow user={mockUser} friend={mockFriend} onClose={mockOnClose} />);
 
-    await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Enter task name'), { target: { value: 'New Task' } });
-      fireEvent.change(screen.getByPlaceholderText('e.g., 2hr 30min'), { target: { value: '1hr' } });
-      fireEvent.click(screen.getByText('Set Now'));
-    });
+    const closeButton = screen.getByLabelText('Close chat');
 
-    // Wait for the button text to be available (not in "Creating..." state)
-    await waitFor(() => {
-      const createButton = screen.getByRole('button', { name: /create/i });
-      expect(createButton).toBeInTheDocument();
-      expect(createButton).not.toBeDisabled();
-    });
+    fireEvent.click(closeButton);
 
-    await act(async () => {
-      const createButton = screen.getByRole('button', { name: /create/i });
-      fireEvent.click(createButton);
-    });
-    
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/tasks/1'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('New Task'),
-      });
-    });
-  });
-
-  test('toggles task completion', async () => {
-    await act(async () => {
-      render(<Task user={mockUser} showMessage={mockShowMessage} />);
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Task 1')).toBeInTheDocument();
-    });
-    
-    const checkboxes = screen.getAllByRole('checkbox');
-    
-    await act(async () => {
-      fireEvent.click(checkboxes[0]);
-    });
-    
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/tasks/1'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: 1, completed: true }),
-      });
-    });
-  });
-
-  test('deletes a task', async () => {
-    window.confirm = jest.fn(() => true);
-    
-    await act(async () => {
-      render(<Task user={mockUser} showMessage={mockShowMessage} />);
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Task 1')).toBeInTheDocument();
-    });
-    
-    const deleteButtons = screen.getAllByText('Delete');
-    
-    await act(async () => {
-      fireEvent.click(deleteButtons[0]);
-    });
-    
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/tasks/1'), {
-        method: 'DELETE',
-      });
-    });
-  });
-
-  test('switches between personal and shared tasks', async () => {
-    await act(async () => {
-      render(<Task user={mockUser} showMessage={mockShowMessage} />);
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Task 1')).toBeInTheDocument();
-    });
-    
-    await act(async () => {
-      fireEvent.click(screen.getByText(/Shared Tasks/));
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Shared Task')).toBeInTheDocument();
-      expect(screen.getByText('(Shared by otheruser)')).toBeInTheDocument();
-    });
+    // Ensure the onClose callback was called
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 });

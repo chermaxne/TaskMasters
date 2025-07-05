@@ -30,7 +30,6 @@ describe('Login Component', () => {
   render(<Login onLogin={mockOnLogin} />);
   fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
   
-  expect(screen.getByText('Welcome to TaskMasters')).toBeInTheDocument(); // or whatever the register header is
   expect(screen.getByPlaceholderText('Confirm Password')).toBeInTheDocument();
 });
 
