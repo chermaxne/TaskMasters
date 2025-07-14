@@ -4,6 +4,7 @@ import Login from './Login';
 import FriendSystem from './FriendSystem';
 import Task from './Task';
 import Calendar from './Calendar';
+import AI from './AI';
 import './App.css';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -11,7 +12,7 @@ const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 function App() {
   const [user, setUser] = useState(null);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('tasks'); // 'tasks', 'friends', 'calendar'
+  const [activeTab, setActiveTab] = useState('tasks'); // 'tasks', 'friends', 'calendar', 'ai'
 
   // Show message temporarily
   const showMessage = (msg, type = 'success') => {
@@ -114,6 +115,20 @@ function App() {
           >
             Calendar
           </button>
+          <button 
+            onClick={() => setActiveTab('ai')}
+            style={{
+              background: activeTab === 'ai' ? 'linear-gradient(135deg, #d4a5c9 0%, #ff6b6b 100%)' : 'transparent',
+              color: activeTab === 'ai' ? 'white' : '#666',
+              border: activeTab === 'ai' ? 'none' : '2px solid #e1e5e9',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            AI
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -128,9 +143,14 @@ function App() {
         {activeTab === 'calendar' && (
           <Calendar user={user} showMessage={showMessage} />
         )}
+
+        {activeTab === 'ai' && (
+          <AI user={user} showMessage={showMessage} />
+        )}
       </div>
     </GoogleOAuthProvider>
   );
 }
 
 export default App;
+
