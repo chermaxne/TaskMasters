@@ -1,237 +1,487 @@
-// FriendSystem.test.js - Fixed version
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import FriendSystem from './src/FriendSystem';
 
-// Mock child components - define them outside and consistently
-jest.mock('./src/FriendsList', () => {
-  return function MockFriendsList({ friends, onRemoveFriend }) {
-    return (
-      <div>
-        Mock FriendsList
-        {friends?.map(friend => (
-          <div key={friend.id}>
-            {friend.username}
-            <button onClick={() => onRemoveFriend?.(friend.id)}>
-              Remove {friend.username}
-            </button>
-          </div>
-        ))}
-      </div>
-    );
-  };
+// Mock FriendsList and FriendRequests to focus on FriendSystem tests
+jest.mock('./FriendsList', () => (props) => {
+  return (
+    <div data-testid="friends-list">
+      FriendsList Component
+      <button onClick={() => props.onRemoveFriend(123)}>Remove Friend</button>
+      {props.friendsLoading && <span>Loading...</span>}
+      <div>Friends count: {props.friends.length}</div>
+    </div>
+  );
 });
 
-jest.mock('./src/FriendRequests', () => {
-  return function MockFriendRequests({ incomingRequests, outgoingRequests }) {
-    return (
-      <div>
-        Mock FriendRequests
-        <div>Incoming: {incomingRequests?.length || 0}</div>
-        <div>Outgoing: {outgoingRequests?.length || 0}</div>
-      </div>
-    );
-  };
+jest.mock('./FriendRequests', () => (props) => {
+  return (
+    <div data-testid="friend-requests">
+      FriendRequests Component
+      <button onClick={() => props.onSendFriendRequest('alice')}>Send Friend Request</button>
+      <button onClick={() => props.onAcceptFriendRequest(10)}>Accept Request</button>
+      <button onClick={() => props.onDeclineFriendRequest(20)}>Decline Request</button>
+      <div>Incoming: {props.friendRequests.length}</div>
+      <div>Pending: {props.pendingRequests.length}</div>
+    </div>
+  );
 });
 
-// Mock data
-const mockFriends = [
-  { id: 1, username: 'friend1' },
-  { id: 2, username: 'friend2' }
-];
+const mockUser = { id: 1, username: 'testuser' };
 
-const mockIncomingRequests = [
-  { id: 1, sender_id: 3, sender_username: 'requester1' }
-];
-
-const mockOutgoingRequests = [
-  { id: 2, receiver_id: 4, receiver_username: 'pending1' }
-];
-
-describe('FriendSystem Component', () => {
-  const mockUser = { id: 1, username: 'testuser' };
-  const mockShowMessage = jest.fn();
+describe('FriendSystem component', () => {
+  let showMessage;
 
   beforeEach(() => {
-    // Clear all mocks
-    mockShowMessage.mockClear();
-    
-    // Setup fetch mock with different responses for different endpoints
-    global.fetch = jest.fn((url) => {
-      if (url.includes('/friends/1')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockFriends),
-        });
-      }
-      if (url.includes('/requests/incoming/1')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockIncomingRequests),
-        });
-      }
-      if (url.includes('/requests/outgoing/1')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockOutgoingRequests),
-        });
-      }
-      // For DELETE requests
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-    });
+    showMessage = jest.fn();
+
+    // Mock fetch globally for friends and requests
+    global.fetch = jest.fn();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test('renders with tabs and switches between them', async () => {
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
-    });
+  const mockFriendsData = [
+    { id: 100, username: 'friend1', friendsSince: '2023-01-01' },
+    { id: 101, username: 'friend2', friendsSince: '2023-02-01' },
+  ];
 
-    // Check initial render
-    expect(screen.getByText('Friend Hub')).toBeInTheDocument();
-    
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.getByText('Mock FriendsList')).toBeInTheDocument();
-    });
+  const mockIncomingRequests = [
+    { id: 200, fromUserId: 2, fromUsername: 'requester1', status: 'pending' },
+  ];
 
-    // Switch to requests tab
-    await act(async () => {
-      fireEvent.click(screen.getByText('Requests'));
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Mock FriendRequests')).toBeInTheDocument();
-    });
+  const mockOutgoingRequests = [
+    { id: 300, toUserId: 3, toUsername: 'pendingFriend', status: 'pending' },
+  ];
 
-    // Switch back to friends tab
-    await act(async () => {
-      fireEvent.click(screen.getByText('My Friends'));
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Mock FriendsList')).toBeInTheDocument();
-    });
-  });
-
-  test('loads friends and requests on mount', async () => {
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
-    });
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/friends/1'));
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/requests/incoming/1'));
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/requests/outgoing/1'));
-    });
-
-    // Verify data is loaded by checking if mock components receive the data
-    await waitFor(() => {
-      expect(screen.getByText('friend1')).toBeInTheDocument();
-      expect(screen.getByText('friend2')).toBeInTheDocument();
-    });
-  });
-
-  test('handles remove friend', async () => {
-    // Mock successful DELETE response
-    fetch.mockImplementationOnce(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-    );
-
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
-    });
-
-    // Wait for friends to load
-    await waitFor(() => {
-      expect(screen.getByText('friend1')).toBeInTheDocument();
-    });
-
-    // Click remove button for friend1
-    await act(async () => {
-      fireEvent.click(screen.getByText('Remove friend1'));
-    });
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/friends/1/1'), {
-        method: 'DELETE'
-      });
-    });
-  });
-
-  test('displays correct counts in tabs', async () => {
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
-    });
-
-    await waitFor(() => {
-      // Should show friend count in tab
-      expect(screen.getByText(/Friends.*2/)).toBeInTheDocument();
-    });
-
-    // Switch to requests to check counts
-    await act(async () => {
-      fireEvent.click(screen.getByText('Requests'));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Incoming: 1')).toBeInTheDocument();
-      expect(screen.getByText('Outgoing: 1')).toBeInTheDocument();
-    });
-  });
-
-  test('handles API errors gracefully', async () => {
-    // Mock fetch to reject
-    global.fetch = jest.fn(() => Promise.reject(new Error('API Error')));
-
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
-    });
-
-    // Component should still render even if API calls fail
-    expect(screen.getByText('Friend Hub')).toBeInTheDocument();
-    expect(screen.getByText('Mock FriendsList')).toBeInTheDocument();
-  });
-
-  test('renders without crashing with minimal props', async () => {
-    await act(async () => {
-      render(<FriendSystem user={{ id: 1 }} showMessage={() => {}} />);
-    });
-    
-    expect(screen.getByText('Friend Hub')).toBeInTheDocument();
-  });
-
-  test('handles empty data responses', async () => {
-    // Mock empty responses
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
+  test('renders and loads friends & requests on mount', async () => {
+    // Mock fetch for friends
+    fetch
+      .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve([]),
+        json: async () => mockFriendsData,
       })
-    );
+      // Mock fetch for incoming requests
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      // Mock fetch for outgoing requests
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      });
 
-    await act(async () => {
-      render(<FriendSystem user={mockUser} showMessage={mockShowMessage} />);
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    // Initially active tab is friends
+    expect(screen.getByText(/Friend Hub/i)).toBeInTheDocument();
+    expect(screen.getByText(/My Friends/i)).toHaveClass('active');
+
+    // Wait for loadFriends and loadFriendRequests to complete
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
+
+    // FriendsList component should render with friends count
+    expect(screen.getByTestId('friends-list')).toBeInTheDocument();
+    expect(screen.getByText(/Friends count: 2/i)).toBeInTheDocument();
+
+    // Tab count badges should show correct numbers
+    expect(screen.getByText('2')).toBeInTheDocument(); // friends tab count
+    expect(screen.getByText('1')).toBeInTheDocument(); // requests tab notification
+  });
+
+  test('switches tabs correctly', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    // Initially friends tab active
+    expect(screen.getByText(/My Friends/i)).toHaveClass('active');
+    expect(screen.queryByTestId('friend-requests')).not.toBeInTheDocument();
+
+    // Click on Requests tab
+    fireEvent.click(screen.getByText(/Requests/i));
+
+    // Requests tab active, FriendRequests component visible
+    expect(screen.getByText(/Requests/i)).toHaveClass('active');
+    expect(screen.getByTestId('friend-requests')).toBeInTheDocument();
+  });
+
+  test('removeFriend confirms and removes friend', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      })
+      // Mock delete friend call
+      .mockResolvedValueOnce({
+        ok: true,
+      })
+      // Mock loadFriends call again after delete
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [mockFriendsData[1]], // One friend left after removal
+      });
+
+    // Mock window.confirm to return true (user confirms)
+    jest.spyOn(window, 'confirm').mockImplementation(() => true);
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    // Click remove friend button inside FriendsList mock
+    fireEvent.click(screen.getByText('Remove Friend'));
+
+    // Wait for delete call and refresh
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(5);
+    });
+
+    expect(showMessage).toHaveBeenCalledWith('Friend removed successfully');
+
+    // Restore window.confirm
+    window.confirm.mockRestore();
+  });
+
+  test('removeFriend cancel does nothing', async () => {
+    jest.spyOn(window, 'confirm').mockImplementation(() => false);
+
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    fireEvent.click(screen.getByText('Remove Friend'));
+
+    // No further fetch calls for delete
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    expect(showMessage).not.toHaveBeenCalled();
+
+    window.confirm.mockRestore();
+  });
+
+  test('sendFriendRequest triggers showMessage, switches tab and reloads requests', async () => {
+    // Setup fetches for initial load
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      // Mock send friend request post
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 123 }),
+      })
+      // Mock reload requests calls
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    // Switch to Requests tab to access FriendRequests mock buttons
+    fireEvent.click(screen.getByText(/Requests/i));
+
+    // Click Send Friend Request button inside FriendRequests mock
+    fireEvent.click(screen.getByText('Send Friend Request'));
 
     await waitFor(() => {
-      expect(screen.getByText('Mock FriendsList')).toBeInTheDocument();
+      expect(showMessage).toHaveBeenCalledWith(
+        'Friend request sent to alice successfully!',
+        'success'
+      );
     });
 
-    // Switch to requests tab to verify it handles empty data
-    await act(async () => {
-      fireEvent.click(screen.getByText('Requests'));
-    });
+    // Active tab should be 'requests'
+    expect(screen.getByText(/Requests/i)).toHaveClass('active');
+  });
+
+  test('acceptFriendRequest calls showMessage and reloads lists', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      })
+      // Mock accept friend request put
+      .mockResolvedValueOnce({
+        ok: true,
+      })
+      // Mock reload friends
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      // Mock reload friend requests
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    // Switch to Requests tab to access FriendRequests mock buttons
+    fireEvent.click(screen.getByText(/Requests/i));
+
+    fireEvent.click(screen.getByText('Accept Request'));
 
     await waitFor(() => {
-      expect(screen.getByText('Incoming: 0')).toBeInTheDocument();
-      expect(screen.getByText('Outgoing: 0')).toBeInTheDocument();
+      expect(showMessage).toHaveBeenCalledWith('Friend request accepted!');
+    });
+  });
+
+  test('declineFriendRequest calls showMessage and reloads requests', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      })
+      // Mock decline friend request put
+      .mockResolvedValueOnce({
+        ok: true,
+      })
+      // Mock reload friend requests
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    fireEvent.click(screen.getByText(/Requests/i));
+
+    fireEvent.click(screen.getByText('Decline Request'));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Friend request declined');
+    });
+  });
+
+  test('handles error loading friends gracefully', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Load friends error' }),
+    });
+
+    // Also mock requests to avoid hanging fetch
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Load friends error', 'error');
+    });
+  });
+
+  test('handles error loading friend requests gracefully', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Load incoming requests error' }),
+      });
+
+    // Second fetch for outgoing requests will not be called due to error, but mock anyway
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Failed to load incoming requests', 'error');
+    });
+  });
+
+  test('handles error sending friend request gracefully', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      // Mock failure on send friend request
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Send request failed' }),
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    fireEvent.click(screen.getByText(/Requests/i));
+
+    // Call send friend request handler directly by simulating button in mocked FriendRequests
+    fireEvent.click(screen.getByText('Send Friend Request'));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Send request failed', 'error');
+    });
+  });
+
+  test('handles error accepting friend request gracefully', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      })
+      // Mock failure on accept friend request
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Accept failed' }),
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    fireEvent.click(screen.getByText(/Requests/i));
+    fireEvent.click(screen.getByText('Accept Request'));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Accept failed', 'error');
+    });
+  });
+
+  test('handles error declining friend request gracefully', async () => {
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFriendsData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockIncomingRequests,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOutgoingRequests,
+      })
+      // Mock failure on decline friend request
+      .mockResolvedValueOnce({
+        ok: false,
+      });
+
+    render(<FriendSystem user={mockUser} showMessage={showMessage} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+
+    fireEvent.click(screen.getByText(/Requests/i));
+    fireEvent.click(screen.getByText('Decline Request'));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Failed to decline friend request', 'error');
     });
   });
 });
+

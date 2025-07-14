@@ -2,195 +2,283 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import FriendRequests from './src/FriendRequests';
 
-// Mock the HTTP client at the top of your test file
-jest.mock('axios', () => ({
-  get: jest.fn(),
-  post: jest.fn(),
-  // ... other methods
-}));
+const mockUser = { id: 1, username: 'testuser' };
 
-// Mock fetch API
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve([
-      { id: 1, username: 'newuser', email: 'newuser@example.com' }
-    ]),
-  })
-);
+const mockFriendRequests = [
+  {
+    id: 100,
+    fromUsername: 'alice',
+    created_at: '2023-07-01T10:00:00Z',
+  },
+  {
+    id: 101,
+    fromUsername: 'bob',
+    created_at: '2023-07-02T10:00:00Z',
+  },
+];
 
-beforeEach(() => {
-  fetch.mockClear();
-});
+const mockPendingRequests = [
+  {
+    id: 200,
+    toUsername: 'charlie',
+    created_at: '2023-07-03T10:00:00Z',
+  },
+];
 
-describe('FriendRequests Component', () => {
-  const mockUser = { id: 1, username: 'testuser' };
-  const mockFriendRequests = [
-    { id: 1, fromUsername: 'user1', created_at: '2023-01-01T00:00:00Z' },
-    { id: 2, fromUsername: 'user2', created_at: '2023-01-02T00:00:00Z' }
-  ];
-  const mockPendingRequests = [
-    { id: 3, toUsername: 'user3', created_at: '2023-01-03T00:00:00Z' }
-  ];
-  const mockShowMessage = jest.fn();
-  const mockLoadFriendRequests = jest.fn();
-  
-  const mockHandlers = {
-    onSendFriendRequest: jest.fn().mockResolvedValue({}),
-    onAcceptFriendRequest: jest.fn().mockResolvedValue({}),
-    onDeclineFriendRequest: jest.fn().mockResolvedValue({}),
-  };
+describe('FriendRequests component', () => {
+  let onSendFriendRequest, onAcceptFriendRequest, onDeclineFriendRequest, showMessage, loadFriendRequests;
 
-  test('renders all sections', () => {
+  beforeEach(() => {
+    onSendFriendRequest = jest.fn(() => Promise.resolve());
+    onAcceptFriendRequest = jest.fn();
+    onDeclineFriendRequest = jest.fn();
+    showMessage = jest.fn();
+    loadFriendRequests = jest.fn(() => Promise.resolve());
+
+    // Mock fetch for user search
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders sections and empty states properly', () => {
+    render(
+      <FriendRequests
+        user={mockUser}
+        friendRequests={[]}
+        pendingRequests={[]}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
+      />
+    );
+
+    // Section titles
+    expect(screen.getByText(/Find Friends/i)).toBeInTheDocument();
+    expect(screen.getByText(/Friend Requests/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sent Requests/i)).toBeInTheDocument();
+
+    // Empty state texts
+    expect(screen.getByText(/No pending requests/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/No incoming friend requests/i).length).toBe(1);
+    expect(screen.getByText(/No pending sent requests/i)).toBeInTheDocument();
+    expect(screen.getByText(/No sent requests/i)).toBeInTheDocument();
+  });
+
+  test('renders friendRequests and pendingRequests with counts', () => {
     render(
       <FriendRequests
         user={mockUser}
         friendRequests={mockFriendRequests}
         pendingRequests={mockPendingRequests}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
       />
     );
-    
-    expect(screen.getByText('Find Friends')).toBeInTheDocument();
-    expect(screen.getByText('Friend Requests')).toBeInTheDocument();
-    expect(screen.getByText('Sent Requests')).toBeInTheDocument();
+
+    // Counts appear
+    expect(screen.getByText('2')).toBeInTheDocument(); // friendRequests count
+    expect(screen.getByText('1')).toBeInTheDocument(); // pendingRequests count
+
+    // Incoming request usernames
+    expect(screen.getByText('alice')).toBeInTheDocument();
+    expect(screen.getByText('bob')).toBeInTheDocument();
+
+    // Sent request username
+    expect(screen.getByText('charlie')).toBeInTheDocument();
+    expect(screen.getByText(/Pending/i)).toBeInTheDocument();
   });
 
-  test('shows incoming friend requests', () => {
-    render(
-      <FriendRequests
-        user={mockUser}
-        friendRequests={mockFriendRequests}
-        pendingRequests={mockPendingRequests}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
-      />
-    );
-    
-    expect(screen.getByText('user1')).toBeInTheDocument();
-    expect(screen.getByText('user2')).toBeInTheDocument();
-    expect(screen.getAllByText('Accept')).toHaveLength(2);
-    expect(screen.getAllByText('Decline')).toHaveLength(2);
-  });
-
-  test('shows sent friend requests', () => {
-    render(
-      <FriendRequests
-        user={mockUser}
-        friendRequests={mockFriendRequests}
-        pendingRequests={mockPendingRequests}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
-      />
-    );
-    
-    expect(screen.getByText('user3')).toBeInTheDocument();
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-  });
-
-  test('handles user search', async () => {
-    const mockSearchResults = [
-      { id: 4, username: 'newuser' }
+  test('search users and display results', async () => {
+    // Mock fetch for search results
+    const searchResults = [
+      { id: 10, username: 'john' },
+      { id: 11, username: 'jane' },
     ];
-    
-    fetch.mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockSearchResults),
-      })
-    );
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => searchResults,
+    });
 
     render(
       <FriendRequests
         user={mockUser}
         friendRequests={[]}
         pendingRequests={[]}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
       />
     );
-    
-    const searchInput = screen.getByPlaceholderText('Enter username...');
-    const searchButton = screen.getByText('Search');
-    
-    fireEvent.change(searchInput, { target: { value: 'newuser' } });
-    fireEvent.click(searchButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('newuser')).toBeInTheDocument();
-      expect(screen.getByText('Add Friend')).toBeInTheDocument();
+
+    // Enter search input
+    fireEvent.change(screen.getByPlaceholderText(/Enter username/i), {
+      target: { value: 'jo' },
     });
+
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    // Search results appear
+    expect(screen.getByText('john')).toBeInTheDocument();
+    expect(screen.getByText('jane')).toBeInTheDocument();
+
+    // Add Friend buttons are shown
+    expect(screen.getAllByText(/Add Friend/i).length).toBe(2);
   });
 
-  test('handles sending friend request', async () => {
-    const mockSearchResults = [
-      { id: 4, username: 'newuser' }
-    ];
-    
-    fetch.mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockSearchResults),
-      })
-    );
+  test('search error shows message and clears results', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ error: 'User search failed' }),
+    });
 
     render(
       <FriendRequests
         user={mockUser}
         friendRequests={[]}
         pendingRequests={[]}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
       />
     );
-    
-    const searchInput = screen.getByPlaceholderText('Enter username...');
-    const searchButton = screen.getByText('Search');
-    
-    fireEvent.change(searchInput, { target: { value: 'newuser' } });
-    fireEvent.click(searchButton);
-    
+
+    fireEvent.change(screen.getByPlaceholderText(/Enter username/i), {
+      target: { value: 'errorcase' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
     await waitFor(() => {
-      fireEvent.click(screen.getByText('Add Friend'));
-      expect(mockHandlers.onSendFriendRequest).toHaveBeenCalledWith('newuser');
+      expect(showMessage).toHaveBeenCalledWith('Error searching users', 'error');
+      expect(screen.queryByText('errorcase')).not.toBeInTheDocument();
     });
   });
 
-  test('handles accepting friend request', () => {
+  test('search non-json response shows error message', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'text/html' },
+      json: async () => ({}),
+    });
+
     render(
       <FriendRequests
         user={mockUser}
-        friendRequests={mockFriendRequests}
-        pendingRequests={mockPendingRequests}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
+        friendRequests={[]}
+        pendingRequests={[]}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
       />
     );
-    
-    fireEvent.click(screen.getAllByText('Accept')[0]);
-    expect(mockHandlers.onAcceptFriendRequest).toHaveBeenCalledWith(1);
+
+    fireEvent.change(screen.getByPlaceholderText(/Enter username/i), {
+      target: { value: 'nonjson' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith('Server returned non-JSON response', 'error');
+    });
   });
 
-  test('handles declining friend request', () => {
+  test('clicking Add Friend triggers onSendFriendRequest and refreshes', async () => {
+    // Setup fetch for search
+    const userToAdd = { id: 15, username: 'friend1' };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => [userToAdd],
+    });
+
+    render(
+      <FriendRequests
+        user={mockUser}
+        friendRequests={[]}
+        pendingRequests={[]}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
+      />
+    );
+
+    // Search users
+    fireEvent.change(screen.getByPlaceholderText(/Enter username/i), {
+      target: { value: 'friend' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => screen.getByText('friend1'));
+
+    // Click add friend
+    onSendFriendRequest.mockResolvedValueOnce();
+
+    fireEvent.click(screen.getByRole('button', { name: /Add Friend/i }));
+
+    await waitFor(() => {
+      expect(onSendFriendRequest).toHaveBeenCalledWith('friend1');
+      expect(showMessage).toHaveBeenCalledWith('Friend request sent to friend1!', 'success');
+      expect(loadFriendRequests).toHaveBeenCalled();
+      expect(screen.getByPlaceholderText(/Enter username/i).value).toBe('');
+    });
+  });
+
+  test('accept friend request calls handler', () => {
     render(
       <FriendRequests
         user={mockUser}
         friendRequests={mockFriendRequests}
-        pendingRequests={mockPendingRequests}
-        showMessage={mockShowMessage}
-        loadFriendRequests={mockLoadFriendRequests}
-        {...mockHandlers}
+        pendingRequests={[]}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
       />
     );
-    
-    fireEvent.click(screen.getAllByText('Decline')[0]);
-    expect(mockHandlers.onDeclineFriendRequest).toHaveBeenCalledWith(1);
+
+    const acceptButtons = screen.getAllByRole('button', { name: /Accept/i });
+    fireEvent.click(acceptButtons[0]);
+
+    expect(onAcceptFriendRequest).toHaveBeenCalledWith(100);
+  });
+
+  test('decline friend request calls handler', () => {
+    render(
+      <FriendRequests
+        user={mockUser}
+        friendRequests={mockFriendRequests}
+        pendingRequests={[]}
+        onSendFriendRequest={onSendFriendRequest}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onDeclineFriendRequest={onDeclineFriendRequest}
+        showMessage={showMessage}
+        loadFriendRequests={loadFriendRequests}
+      />
+    );
+
+    const declineButtons = screen.getAllByRole('button', { name: /Decline/i });
+    fireEvent.click(declineButtons[0]);
+
+    expect(onDeclineFriendRequest).toHaveBeenCalledWith(100);
   });
 });
