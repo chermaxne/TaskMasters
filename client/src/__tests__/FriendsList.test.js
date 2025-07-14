@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import FriendsList from './src/FriendsList';
+import FriendsList from '../FriendsList';
 
 describe('FriendsList Component', () => {
   const mockUser = { id: 1, username: 'testuser' };

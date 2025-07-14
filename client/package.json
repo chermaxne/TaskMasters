@@ -5,9 +5,6 @@
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
     "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
@@ -18,8 +15,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "jest",
-    "eject": "react-scripts eject"
+    "test": "react-scripts test --watchAll --transformIgnorePatterns \"node_modules/(?!@testing-library)/\"",
+    "eject": "react-scripts eject",
+    "test:coverage": "react-scripts test --coverage --collectCoverageFrom='src/**/*.{js,jsx}'"
   },
   "eslintConfig": {
     "extends": [
@@ -38,5 +36,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "jest": "^27.5.1",
+    "jest-environment-jsdom": "^27.5.1",
+    "identity-obj-proxy": "^3.0.0"
   }
 }

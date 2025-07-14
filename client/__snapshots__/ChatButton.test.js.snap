@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ChatButton Component matches snapshot closed and open 1`] = `
+<DocumentFragment>
+  <button
+    class="chat-button"
+    title="Chat with friend"
+  >
+    💬 Chat
+  </button>
+</DocumentFragment>
+`;
+
+exports[`ChatButton Component matches snapshot closed and open 2`] = `
+<DocumentFragment>
+  <button
+    class="chat-button"
+    title="Chat with friend"
+  >
+    💬 Chat
+  </button>
+  <div
+    data-testid="mock-chat-window"
+  >
+    Mock Chat Window - testuser chatting with testfriend
+    <button
+      data-testid="close-btn"
+    >
+      Close Chat
+    </button>
+  </div>
+</DocumentFragment>
+`;
