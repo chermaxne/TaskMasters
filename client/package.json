@@ -17,7 +17,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll --transformIgnorePatterns \"node_modules/(?!@testing-library)/\"",
     "eject": "react-scripts eject",
-    "test:coverage": "react-scripts test --coverage --collectCoverageFrom='src/**/*.{js,jsx}'"
+    "test:coverage": "react-scripts test --coverage --collectCoverageFrom=src/**/*.{js,jsx}"
   },
   "eslintConfig": {
     "extends": [
@@ -38,11 +38,25 @@
     ]
   },
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "babel-jest": "^30.0.4",
+    "identity-obj-proxy": "^3.0.0",
     "jest": "^27.5.1",
     "jest-environment-jsdom": "^27.5.1",
-    "identity-obj-proxy": "^3.0.0"
+    "jest-fetch-mock": "^3.0.3"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/**/__tests__/**"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios)/)"
+    ]
   }
 }

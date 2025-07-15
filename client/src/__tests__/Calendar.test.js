@@ -1,58 +1,157 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Calendar from '../Calendar';
 
 describe('Calendar Component', () => {
-  const mockUser = { username: 'TestUser' };
-  const mockShowMessage = jest.fn();
+  let mockShowMessage;
 
   beforeEach(() => {
-    render(<Calendar user={mockUser} showMessage={mockShowMessage} />);
+    mockShowMessage = jest.fn();
+    // Mock window.confirm to always return true by default
+    jest.spyOn(window, 'confirm').mockImplementation(() => true);
   });
 
-  test('renders calendar title and navigation', () => {
-    expect(screen.getByText(/Calendar/i)).toBeInTheDocument();
-    expect(screen.getByText(/Prev/i)).toBeInTheDocument();
-    expect(screen.getByText(/Next/i)).toBeInTheDocument();
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  test('shows today as selected by default', () => {
-    const today = new Date().getDate().toString();
-    expect(screen.getAllByText(today)[0]).toBeInTheDocument();
+  test('renders calendar with current month and year', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    const monthYear = screen.getByText(new RegExp(new Date().toLocaleString('default', { month: 'long' }), 'i'));
+    expect(monthYear).toBeInTheDocument();
   });
 
-  test('clicking on a date selects it', () => {
-    const days = screen.getAllByText('15');
-    if (days.length > 0) {
-      fireEvent.click(days[0]);
-      expect(screen.getByText(/No events for this date/i)).toBeInTheDocument();
-    }
+  test('renders day headers Sun to Sat', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+      expect(screen.getByText(day)).toBeInTheDocument();
+    });
   });
 
-  test('adds a new event', () => {
-    fireEvent.click(screen.getByText(/Add Event/i));
+  test('navigates months with Prev and Next buttons', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    const prevBtn = screen.getByText(/prev/i);
+    const nextBtn = screen.getByText(/next/i);
+    
+    // Initial month
+    const initialMonth = screen.getByText(new RegExp(new Date().toLocaleString('default', { month: 'long' }), 'i'));
 
-    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: 'Test Event' } });
-    fireEvent.change(screen.getByLabelText(/Time/i), { target: { value: '10:00' } });
-    fireEvent.change(screen.getByLabelText(/Duration/i), { target: { value: '1h' } });
-    fireEvent.change(screen.getByLabelText(/Location/i), { target: { value: 'Room A' } });
-    fireEvent.change(screen.getByLabelText(/Attendees/i), { target: { value: 'Alice, Bob' } });
+    fireEvent.click(nextBtn);
+    const nextMonth = screen.getByText(new RegExp(new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleString('default', { month: 'long' }), 'i'));
+    expect(nextMonth).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/Create Event/i));
-    expect(mockShowMessage).toHaveBeenCalledWith('Event created successfully', 'success');
+    fireEvent.click(prevBtn);
+    fireEvent.click(prevBtn);
+    const prevMonth = screen.getByText(new RegExp(new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleString('default', { month: 'long' }), 'i'));
+    expect(prevMonth).toBeInTheDocument();
   });
 
-  test('edits an event', () => {
-    fireEvent.click(screen.getByText(/Edit/i));
-    const titleInput = screen.getByLabelText(/Title/i);
-    fireEvent.change(titleInput, { target: { value: 'Updated Title' } });
-    fireEvent.click(screen.getByText(/Update Event/i));
-    expect(mockShowMessage).toHaveBeenCalledWith('Event updated successfully', 'success');
+  test('selecting a date updates selectedDate and events list', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    // Get a calendar day that is not empty (e.g. 1 or today's date)
+    const calendarDays = screen.getAllByText(new Date().getDate().toString());
+    // Click the first available date
+    fireEvent.click(calendarDays[0]);
+    // Check the selected date displayed in events header matches selectedDate.toDateString()
+    const selectedDateText = screen.getByText(new RegExp(new Date().toDateString(), 'i'));
+    expect(selectedDateText).toBeInTheDocument();
   });
 
-  test('deletes an event', () => {
-    window.confirm = jest.fn(() => true); // Mock confirm to always return true
-    fireEvent.click(screen.getByText(/Delete/i));
+  test('shows "No events for this date" if no events', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    // Pick a date with no events, e.g. 15 days in future from today (likely no event)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 15);
+    const days = screen.getAllByText(futureDate.getDate().toString());
+    if (days.length > 0) fireEvent.click(days[0]);
+    const noEvents = screen.getByText(/no events for this date/i);
+    expect(noEvents).toBeInTheDocument();
+  });
+
+  test('opens event form modal on Add Event click', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    const addBtn = screen.getByRole('button', { name: /add event/i });
+    fireEvent.click(addBtn);
+    expect(screen.getByText(/add new event/i)).toBeInTheDocument();
+  });
+
+  test('can cancel event form modal', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    fireEvent.click(screen.getByRole('button', { name: /add event/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(screen.queryByText(/add new event/i)).not.toBeInTheDocument();
+  });
+
+  test('shows error if required fields empty on save', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    fireEvent.click(screen.getByRole('button', { name: /add event/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create event/i }));
+    expect(mockShowMessage).toHaveBeenCalledWith('Please fill in all required fields', 'error');
+  });
+
+  test('creates new event successfully', async () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    fireEvent.click(screen.getByRole('button', { name: /add event/i }));
+
+    fireEvent.change(screen.getByLabelText(/title \*/i), { target: { value: 'New Event' } });
+    fireEvent.change(screen.getByLabelText(/time \*/i), { target: { value: '10:00' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /create event/i }));
+
+    await waitFor(() => {
+      expect(mockShowMessage).toHaveBeenCalledWith('Event created successfully', 'success');
+    });
+
+    expect(screen.queryByText(/add new event/i)).not.toBeInTheDocument();
+
+    // The new event should appear in the event list for selectedDate
+    expect(screen.getByText('New Event')).toBeInTheDocument();
+  });
+
+  test('edits existing event', async () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    // Existing event from initial state is "Team Meeting"
+    const editBtns = screen.getAllByRole('button', { name: /edit/i });
+    fireEvent.click(editBtns[0]);
+    expect(screen.getByText(/edit event/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/title \*/i), { target: { value: 'Updated Meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /update event/i }));
+
+    await waitFor(() => {
+      expect(mockShowMessage).toHaveBeenCalledWith('Event updated successfully', 'success');
+    });
+
+    expect(screen.queryByText(/edit event/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Updated Meeting')).toBeInTheDocument();
+  });
+
+  test('deletes event with confirmation', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+
+    const deleteBtns = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteBtns[0]);
+
+    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this event?');
     expect(mockShowMessage).toHaveBeenCalledWith('Event deleted successfully', 'success');
+  });
+
+  test('does not delete event if confirmation cancelled', () => {
+    window.confirm.mockImplementationOnce(() => false);
+
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+
+    const deleteBtns = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteBtns[0]);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockShowMessage).not.toHaveBeenCalledWith('Event deleted successfully', 'success');
+  });
+
+  test('renders event indicators with correct colors', () => {
+    render(<Calendar user={{}} showMessage={mockShowMessage} />);
+    // The initial event has type 'meeting', color #4CAF50
+    const indicators = screen.getAllByTestId('event-indicator');
+    expect(indicators[0]).toHaveStyle('background-color: #4CAF50');
   });
 });
