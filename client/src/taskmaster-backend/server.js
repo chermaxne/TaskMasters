@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const port = process.env.PORT || 10000;
 require('dotenv').config();
+const axios = require('axios');
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running' });
@@ -628,6 +629,38 @@ app.put('/messages/read', (req, res) => {
   );
 });
 
+// AI proxy endpoint for OpenAI
+app.post('/api/ai', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ error: 'Prompt is required' });
+  }
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 512,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    res.json({ ai: response.data.choices[0].message.content });
+  } catch (err) {
+    // Detailed error logging for debugging
+    if (err.response) {
+      console.error('OpenAI API error:', err.response.status, err.response.data);
+    } else {
+      console.error('OpenAI API error:', err.message);
+    }
+    res.status(500).json({ error: err.message, details: err.response?.data });
+  }
+});
 
 
 // Start server
