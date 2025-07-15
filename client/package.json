@@ -17,7 +17,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll --transformIgnorePatterns \"node_modules/(?!@testing-library)/\"",
     "eject": "react-scripts eject",
-    "test:coverage": "react-scripts test --coverage --collectCoverageFrom=src/**/*.{js,jsx}"
+    "test:coverage": "react-scripts test --coverage --watchAll=false"
   },
   "eslintConfig": {
     "extends": [
@@ -51,12 +51,17 @@
     "jest-fetch-mock": "^3.0.3"
   },
   "jest": {
-    "collectCoverageFrom": [
-      "src/**/*.{js,jsx}",
-      "!src/**/__tests__/**"
-    ],
     "transformIgnorePatterns": [
       "node_modules/(?!(axios)/)"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!**/node_modules/**"
+    ],
+    "coveragePathIgnorePatterns": [
+      "src/taskmaster-backend/",
+      "src/index.js",
+      "src/reportWebVitals.js"
     ]
   }
 }
