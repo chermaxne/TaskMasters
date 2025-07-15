@@ -85,7 +85,7 @@ const handleSendFriendRequest = async (username) => {
       {/* Search and Send Friend Request Section */}
       <div className="send-request-section">
         <div className="section-header">
-          <h3 className="section-title">
+          <h3 className="section-title" data-testid="find-friends-title">
             <span className="section-icon">🔍</span>
             Find Friends
           </h3>
@@ -141,12 +141,10 @@ const handleSendFriendRequest = async (username) => {
       {/* Incoming Friend Requests */}
       <div className="incoming-requests-section">
         <div className="section-header">
-          <h3 className="section-title">
+          <h3 className="section-title" data-testid="incoming-requests-title">
             <span className="section-icon">📥</span>
             Friend Requests
-            {friendRequests.length > 0 && (
-              <span className="request-count">{friendRequests.length}</span>
-            )}
+            <span className="request-count" data-testid="incoming-requests-count">{friendRequests.length}</span>
           </h3>
           <p className="section-subtitle">
             {friendRequests.length === 0 
@@ -201,12 +199,10 @@ const handleSendFriendRequest = async (username) => {
       {/* Sent Friend Requests */}
       <div className="sent-requests-section">
         <div className="section-header">
-          <h3 className="section-title">
+          <h3 className="section-title" data-testid="sent-requests-title">
             <span className="section-icon">📤</span>
             Sent Requests
-            {pendingRequests.length > 0 && (
-              <span className="request-count">{pendingRequests.length}</span>
-            )}
+            <span className="request-count" data-testid="sent-requests-count">{pendingRequests.length}</span>
           </h3>
           <p className="section-subtitle">
             {pendingRequests.length === 0 

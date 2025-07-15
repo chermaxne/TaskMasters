@@ -58,15 +58,19 @@ describe('FriendRequests component', () => {
     );
 
     // Section titles
-    expect(screen.getByText(/Find Friends/i)).toBeInTheDocument();
-    expect(screen.getByText(/Friend Requests/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sent Requests/i)).toBeInTheDocument();
+    expect(screen.getByTestId('find-friends-title')).toBeInTheDocument();
+    expect(screen.getByTestId('incoming-requests-title')).toBeInTheDocument();
+    expect(screen.getByTestId('sent-requests-title')).toBeInTheDocument();
 
     // Empty state texts
     expect(screen.getByText(/No pending requests/i)).toBeInTheDocument();
     expect(screen.getAllByText(/No incoming friend requests/i).length).toBe(1);
     expect(screen.getByText(/No pending sent requests/i)).toBeInTheDocument();
     expect(screen.getByText(/No sent requests/i)).toBeInTheDocument();
+
+    // Counts
+    expect(screen.getByTestId('incoming-requests-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('sent-requests-count')).toHaveTextContent('0');
   });
 
   test('renders friendRequests and pendingRequests with counts', () => {
@@ -84,8 +88,8 @@ describe('FriendRequests component', () => {
     );
 
     // Counts appear
-    expect(screen.getByText('2')).toBeInTheDocument(); // friendRequests count
-    expect(screen.getByText('1')).toBeInTheDocument(); // pendingRequests count
+    expect(screen.getByTestId('incoming-requests-count')).toHaveTextContent('2'); // friendRequests count
+    expect(screen.getByTestId('sent-requests-count')).toHaveTextContent('1'); // pendingRequests count
 
     // Incoming request usernames
     expect(screen.getByText('alice')).toBeInTheDocument();
@@ -131,8 +135,10 @@ describe('FriendRequests component', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
 
     // Search results appear
-    expect(screen.getByText('john')).toBeInTheDocument();
-    expect(screen.getByText('jane')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('john')).toBeInTheDocument();
+      expect(screen.getByText('jane')).toBeInTheDocument();
+    });
 
     // Add Friend buttons are shown
     expect(screen.getAllByText(/Add Friend/i).length).toBe(2);
@@ -164,7 +170,7 @@ describe('FriendRequests component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => {
-      expect(showMessage).toHaveBeenCalledWith('Error searching users', 'error');
+      expect(showMessage).toHaveBeenCalledWith('User search failed', 'error');
       expect(screen.queryByText('errorcase')).not.toBeInTheDocument();
     });
   });

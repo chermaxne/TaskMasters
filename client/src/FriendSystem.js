@@ -199,9 +199,7 @@ const acceptFriendRequest = async (requestId) => {
         >
           <span className="tab-icon">👫</span>
           <span className="tab-text">My Friends</span>
-          {friends.length > 0 && (
-            <span className="tab-count">{friends.length}</span>
-          )}
+          <span className="tab-count" data-testid="friends-count">{friends.length}</span>
         </button>
         
         <button 
@@ -210,9 +208,7 @@ const acceptFriendRequest = async (requestId) => {
         >
           <span className="tab-icon">✉️</span>
           <span className="tab-text">Requests</span>
-          {friendRequests.length > 0 && (
-            <span className="tab-notification">{friendRequests.length}</span>
-          )}
+          <span className="tab-count" data-testid="requests-count">{friendRequests.length}</span>
         </button>
       </div>
 

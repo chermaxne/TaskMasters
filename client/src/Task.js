@@ -439,8 +439,9 @@ const handleAddTask = async () => {
   {/* Task form fields - First Row */}
   <div className="task-form-grid">
     <div className={`form-group ${errors.taskName ? 'error' : ''}`}>
-      <label>Task Name</label>
+      <label htmlFor="task-name">Task Name</label>
       <input
+        id="task-name"
         type="text"
         placeholder="Enter task name"
         value={taskName}
@@ -451,8 +452,9 @@ const handleAddTask = async () => {
     </div>
 
     <div className={`form-group ${errors.dueDate ? 'error' : ''}`}>
-      <label>Due Date</label>
+      <label htmlFor="due-date">Due Date</label>
       <input
+        id="due-date"
         type="date"
         value={dueDate}
         onChange={(e) => handleInputChange('dueDate', e.target.value)}
@@ -462,8 +464,9 @@ const handleAddTask = async () => {
     </div>
 
     <div className="form-group">
-      <label>Due Time</label>
+      <label htmlFor="due-time">Due Time</label>
       <input
+        id="due-time"
         type="time"
         value={dueTime}
         onChange={(e) => setDueTime(e.target.value)}
@@ -472,9 +475,10 @@ const handleAddTask = async () => {
     </div>
 
     <div className={`form-group ${errors.priority ? 'error' : ''}`}>
-      <label>Priority</label>
-      <select 
-        value={priority} 
+      <label htmlFor="priority">Priority</label>
+      <select
+        id="priority"
+        value={priority}
         onChange={(e) => handleInputChange('priority', e.target.value)}
         disabled={loading}
       >
@@ -487,8 +491,9 @@ const handleAddTask = async () => {
     </div>
 
     <div className={`form-group ${errors.workload ? 'error' : ''}`}>
-      <label>Workload</label>
+      <label htmlFor="workload">Workload</label>
       <input
+        id="workload"
         type="text"
         placeholder="e.g., 2hr 30min"
         value={workload}
@@ -569,8 +574,9 @@ const handleAddTask = async () => {
 <div className="sort-options">
   <div className="controls-container">
     <div className="control-group">
-      <label>Search:</label>
+      <label htmlFor="search-tasks">Search:</label>
       <input
+        id="search-tasks"
         type="text"
         placeholder="Search tasks..."
         value={searchTerm}
@@ -580,9 +586,10 @@ const handleAddTask = async () => {
     </div>
 
     <div className="control-group">
-      <label>Filter:</label>
-      <select 
-        value={filterOption} 
+      <label htmlFor="filter-tasks">Filter:</label>
+      <select
+        id="filter-tasks"
+        value={filterOption}
         onChange={(e) => setFilterOption(e.target.value)}
       >
         <option value="all">All Tasks</option>
@@ -593,9 +600,10 @@ const handleAddTask = async () => {
     </div>
 
     <div className="control-group">
-      <label>Sort by:</label>
-      <select 
-        value={sortOption} 
+      <label htmlFor="sort-tasks">Sort by:</label>
+      <select
+        id="sort-tasks"
+        value={sortOption}
         onChange={(e) => setSortOption(e.target.value)}
       >
         <option value="">Default</option>
@@ -674,7 +682,7 @@ const handleAddTask = async () => {
                       onChange={() => handleToggle(task.id, task.completed)}
                     />
                     <div>
-                      <strong>{task.name}</strong>
+                      <strong data-testid="task-name">{task.name}</strong>
                       {isOverdue && !task.completed && (
                         <span className="overdue-label">
                           OVERDUE

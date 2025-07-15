@@ -216,6 +216,7 @@ const Calendar = ({ user, showMessage }) => {
                               key={event.id}
                               className="event-indicator"
                               style={{ backgroundColor: getEventTypeColor(event.type) }}
+                              data-testid="event-indicator"
                             />
                           ))}
                           {getEventsForDate(date).length > 2 && (
@@ -262,12 +263,14 @@ const Calendar = ({ user, showMessage }) => {
                         <button
                           onClick={() => handleEditEvent(event)}
                           className="action-btn edit-btn"
+                          aria-label="Edit"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDeleteEvent(event.id)}
                           className="action-btn delete-btn"
+                          aria-label="Delete"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -308,8 +311,9 @@ const Calendar = ({ user, showMessage }) => {
 
               <div className="form-container">
                 <div className="form-group">
-                  <label className="form-label">Title *</label>
+                  <label className="form-label" htmlFor="event-title">Title *</label>
                   <input
+                    id="event-title"
                     type="text"
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
@@ -319,8 +323,9 @@ const Calendar = ({ user, showMessage }) => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Time *</label>
+                    <label className="form-label" htmlFor="event-time">Time *</label>
                     <input
+                      id="event-time"
                       type="time"
                       value={newEvent.time}
                       onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
@@ -329,8 +334,9 @@ const Calendar = ({ user, showMessage }) => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Duration</label>
+                    <label className="form-label" htmlFor="event-duration">Duration</label>
                     <input
+                      id="event-duration"
                       type="text"
                       value={newEvent.duration}
                       onChange={(e) => setNewEvent({ ...newEvent, duration: e.target.value })}
@@ -341,8 +347,9 @@ const Calendar = ({ user, showMessage }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Location</label>
+                  <label className="form-label" htmlFor="event-location">Location</label>
                   <input
+                    id="event-location"
                     type="text"
                     value={newEvent.location}
                     onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
@@ -352,8 +359,9 @@ const Calendar = ({ user, showMessage }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Event Type</label>
+                  <label className="form-label" htmlFor="event-type">Event Type</label>
                   <select
+                    id="event-type"
                     value={newEvent.type}
                     onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
                     className="form-select"
@@ -366,8 +374,9 @@ const Calendar = ({ user, showMessage }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Attendees</label>
+                  <label className="form-label" htmlFor="event-attendees">Attendees</label>
                   <input
+                    id="event-attendees"
                     type="text"
                     value={newEvent.attendees}
                     onChange={(e) => setNewEvent({ ...newEvent, attendees: e.target.value })}
