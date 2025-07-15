@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import Task from '../Task';
+import Task from '../Task';  // Adjust path if needed
 
-// Mock fetch globally
+// Mock global fetch
 global.fetch = jest.fn();
 
 const mockUser = { id: '123', username: 'testuser' };
@@ -58,7 +58,6 @@ describe('Task component', () => {
     messages = [];
     fetch.mockReset();
 
-    // Mock /tasks/:id response
     fetch.mockImplementation((url) => {
       if (url.endsWith(`/tasks/${mockUser.id}`)) {
         return Promise.resolve({
@@ -83,18 +82,10 @@ describe('Task component', () => {
   });
 
   function fillValidForm() {
-    fireEvent.change(screen.getByPlaceholderText(/task name/i), {
-      target: { value: 'New Task' },
-    });
-    fireEvent.change(screen.getByLabelText(/due date/i), {
-      target: { value: '2099-12-30' },
-    });
-    fireEvent.change(screen.getByLabelText(/priority/i), {
-      target: { value: 'High' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/e\.g\., 2hr 30min/i), {
-      target: { value: '1hr' },
-    });
+    fireEvent.change(screen.getByPlaceholderText(/task name/i), { target: { value: 'New Task' } });
+    fireEvent.change(screen.getByLabelText(/due date/i), { target: { value: '2099-12-30' } });
+    fireEvent.change(screen.getByLabelText(/priority/i), { target: { value: 'High' } });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\., 2hr 30min/i), { target: { value: '1hr' } });
   }
 
   test('renders task stats and form initially', async () => {
@@ -102,12 +93,9 @@ describe('Task component', () => {
       render(<Task user={mockUser} showMessage={showMessage} />);
     });
 
-    // Wait for initial tasks loaded
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/tasks/${mockUser.id}`));
     expect(screen.getByText(/total tasks/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/task name/i)).toBeInTheDocument();
-
-    // Tabs rendered (use getAllByText to avoid ambiguity)
     expect(screen.getAllByText(/my tasks/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/shared tasks/i).length).toBeGreaterThan(0);
   });
@@ -132,29 +120,19 @@ describe('Task component', () => {
 
     fillValidForm();
 
-    // Enter invalid workload
-    fireEvent.change(screen.getByPlaceholderText(/e\.g\., 2hr 30min/i), {
-      target: { value: 'invalid' },
-    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\., 2hr 30min/i), { target: { value: 'invalid' } });
 
     fireEvent.click(screen.getByText(/create task/i));
 
     expect(await screen.findByText(/workload format should be like/i)).toBeInTheDocument();
   });
 
-  // Remove or comment out tests that cannot be completed due to system design:
-  // test('creates a new task successfully', ...)
-  // test('toggles share mode and selects friends', ...)
-  // test('switches between personal and shared tabs', ...)
-
   test('filters tasks by search term', async () => {
     await act(async () => {
       render(<Task user={mockUser} showMessage={showMessage} />);
     });
 
-    fireEvent.change(screen.getByPlaceholderText(/search tasks/i), {
-      target: { value: 'completed' },
-    });
+    fireEvent.change(screen.getByPlaceholderText(/search tasks/i), { target: { value: 'completed' } });
 
     expect(screen.getByText(/completed task/i)).toBeInTheDocument();
     expect(screen.queryByText(/test task 1/i)).not.toBeInTheDocument();
@@ -165,9 +143,7 @@ describe('Task component', () => {
       render(<Task user={mockUser} showMessage={showMessage} />);
     });
 
-    fireEvent.change(screen.getByLabelText(/^filter:/i), {
-      target: { value: 'completed' },
-    });
+    fireEvent.change(screen.getByLabelText(/^filter:/i), { target: { value: 'completed' } });
 
     expect(screen.getByText(/completed task/i)).toBeInTheDocument();
     expect(screen.queryByText(/test task 1/i)).not.toBeInTheDocument();
@@ -178,15 +154,13 @@ describe('Task component', () => {
       render(<Task user={mockUser} showMessage={showMessage} />);
     });
 
-    fireEvent.change(screen.getByLabelText(/^sort by:/i), {
-      target: { value: 'name' },
-    });
+    fireEvent.change(screen.getByLabelText(/^sort by:/i), { target: { value: 'name' } });
 
-    const taskNames = screen.getAllByRole('checkbox').map((cb) => 
+    const taskNames = screen.getAllByRole('checkbox').map((cb) =>
       cb.nextSibling.querySelector('strong').textContent
     );
 
-    expect(taskNames).toEqual(['Completed Task', 'Test Task 1']); // Alphabetical order
+    expect(taskNames).toEqual(['Completed Task', 'Test Task 1']);
   });
 
   test('sets current date and time', async () => {
@@ -199,7 +173,6 @@ describe('Task component', () => {
     const dueDateInput = screen.getByLabelText(/due date/i);
     const dueTimeInput = screen.getByLabelText(/due time/i);
 
-    // Date is today and time is current (approximate check)
     expect(dueDateInput.value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(dueTimeInput.value).toMatch(/^\d{2}:\d{2}$/);
   });
