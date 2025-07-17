@@ -150,7 +150,7 @@
 }
 
 .task-form button[type="button"]:not(.set-now-button):not(.share-toggle-button) {
-  background: #2196F3;
+  background: linear-gradient(135deg, #4FC3F7, #42A5F5, #5C6BC0);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -405,7 +405,7 @@
 }
 
 .share-toggle-button:not(.active) {
-  background: #2196F3;
+  background: linear-gradient(135deg, #4FC3F7, #42A5F5, #5C6BC0);
 }
 
 .share-toggle-button:hover {
@@ -444,7 +444,8 @@
   font-weight: bold;
   border-bottom-color: #2196F3;
   background: #f8f9fa;
-  color: #2196F3;
+  color: linear-gradient(135deg, #4FC3F7, #42A5F5, #5C6BC0);
+
 }
 
 /* Responsive Design */

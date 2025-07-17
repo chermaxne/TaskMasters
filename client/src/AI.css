@@ -9,9 +9,19 @@
     text-align: center;
     margin-bottom: 30px;
     padding: 20px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, #FFB74D, #FF8A65, #FF6B81, #C471ED);
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    font-size: 2.5rem;
+    font-weight: 800;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
   
   .ai-header h2 {
@@ -28,12 +38,13 @@
   }
   
   .task-summary {
-    background: white;
+    background:#FFFFF0;
     border-radius: 12px;
     padding: 25px;
     margin-bottom: 30px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     border: 1px solid #e1e5e9;
+    
   }
   
   .task-summary h3 {
@@ -53,7 +64,7 @@
   .stat {
     text-align: center;
     padding: 20px 15px;
-    background: white;
+    background: #FFF8DC;
     border: 2px solid #e1e5e9;
     border-radius: 12px;
     color: #2c3e50;
@@ -71,7 +82,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FFB74D, #FF8A65, #FF6B81);
   }
   
   .stat:hover {
@@ -97,7 +108,7 @@
   }
   
   .ai-controls {
-    background: white;
+    background: #FFFFF0;
     border-radius: 12px;
     padding: 25px;
     margin-bottom: 30px;
@@ -138,7 +149,7 @@
   }
   
   .generate-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FFB74D, #FF8A65, #FF6B81);
     color: white;
     border: none;
     padding: 15px 30px;
@@ -169,7 +180,7 @@
   }
   
   .ai-response {
-    background: white;
+    background: #FFFFF0;
     border-radius: 12px;
     padding: 25px;
     margin-bottom: 30px;
@@ -185,7 +196,7 @@
   }
   
   .response-content {
-    background: #f8f9fa;
+    background: #FFFFF0;
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
@@ -217,7 +228,7 @@
   }
   
   .active-tasks-preview {
-    background: white;
+    background: #FFFFF0;
     border-radius: 12px;
     padding: 25px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
@@ -238,10 +249,10 @@
   }
   
   .task-card {
-    background: #f8f9fa;
+    background: #FFFFF0;
     border-radius: 8px;
     padding: 15px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #FF8A65;
     transition: transform 0.2s ease;
   }
   
@@ -358,4 +369,6 @@
       font-size: 1rem;
     }
   }
+  
+
   

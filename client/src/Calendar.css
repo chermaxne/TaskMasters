@@ -1,10 +1,12 @@
 .calendar-wrapper {
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(135deg, #FFB74D, #FF8A65, #FF6B81, #C471ED);;
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   max-width: 1200px;
   margin: 0 auto;
+  text-align: center;
+  -webkit-background-clip: text;
 }
 
 /* Calendar Header */
@@ -71,7 +73,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  background: #f8f9fa;
+  background: #FFFFF0;
   padding: 10px;
   border-radius: 12px;
 }
@@ -87,7 +89,7 @@
 .calendar-day {
   padding: 10px;
   min-height: 60px;
-  background: white;
+  background: #FFFFF0;
   cursor: pointer;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
@@ -211,7 +213,7 @@
 }
 
 .event-card {
-  background: white;
+  background: #FFFFF0;
   border-left: 4px solid #667eea;
   border-radius: 12px;
   padding: 15px;
